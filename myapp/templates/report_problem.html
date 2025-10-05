@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="container mt-5">
+  <h2 class="mb-4 text-center text-primary">🚨 Report a Problem</h2>
+  <p class="text-center text-muted mb-5">Quickly submit any issues with your scooter for faster assistance.</p>
+
+  <div class="card shadow-sm p-4 mx-auto" style="max-width: 600px; border-radius: 15px; background-color: #f8f9fa;">
+    <form method="post" id="reportProblemForm">
+      {% csrf_token %}
+
+      <!-- Section 1: Warning Signal -->
+      <div class="mb-4">
+        <label for="{{ form.problem_type.id_for_label }}" class="form-label fw-bold">⚠️ Warning Signal</label>
+        {{ form.problem_type }}
+      </div>
+
+      <!-- Section 2: Major Problems -->
+      <div class="mb-4">
+        <label for="{{ form.major_problem.id_for_label }}" class="form-label fw-bold">🔧 Major Problem (Frequently Occurring)</label>
+        {{ form.major_problem }}
+      </div>
+
+      <!-- Section 3: Custom Description -->
+      <div class="mb-4">
+        <label for="{{ form.description.id_for_label }}" class="form-label fw-bold">📝 If not listed, describe your problem</label>
+        {{ form.description }}
+      </div>
+
+      <button type="submit" class="btn btn-success w-100 fw-bold">Submit Report</button>
+    </form>
+  </div>
+</div>
+
+<style>
+  .form-select, textarea {
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #ced4da;
+    width: 100%;
+  }
+  .btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+  }
+  .btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+  }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const problemTypeField = document.getElementById("id_problem_type");
+  const majorProblemField = document.getElementById("id_major_problem");
+
+  problemTypeField.addEventListener("change", function() {
+    const warningType = this.value;
+
+    // Reset major problems dropdown
+    majorProblemField.innerHTML = '<option value="">---------</option>';
+
+    if (!warningType) return;
+
+    fetch(`/myapp/ajax/load-major-problems/?warning_type=${warningType}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.length === 0) {
+          const opt = document.createElement("option");
+          opt.value = "";
+          opt.textContent = "No frequently occurring problems listed";
+          majorProblemField.appendChild(opt);
+        } else {
+          data.forEach(item => {
+            const opt = document.createElement("option");
+            opt.value = item.id;
+            opt.textContent = item.name;
+            majorProblemField.appendChild(opt);
+          });
+        }
+      })
+      .catch(error => console.error("Error loading major problems:", error));
+  });
+});
+</script>
+{% endblock %}

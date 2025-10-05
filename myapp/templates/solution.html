@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<div class="container mt-5">
+  <h2 class="mb-4 text-center text-primary">🔧 Solution Guide for 
+    {% if report.major_problem %}
+        {{ report.major_problem.name }}
+    {% else %}
+        {{ report.problem_type }}
+    {% endif %}
+  </h2>
+
+  <div class="card shadow-sm p-4 mb-4" style="background-color: #f0f8ff;">
+    <p><strong>Problem Type:</strong> {{ report.problem_type }}</p>
+    <p><strong>Description:</strong> {{ report.description }}</p>
+  </div>
+
+  {% if media %}
+    {% if media.steps %}
+      <div class="card p-3 mb-3 shadow-sm" style="background-color: #ffffff;">
+        <h5 class="text-success">📝 Steps to Solve:</h5>
+        <ol>
+          {% for step in media.steps %}
+          <li>{{ step }}</li>
+          {% endfor %}
+        </ol>
+      </div>
+
+      <!-- Language selection and TTS -->
+      <div class="mb-4">
+        <label for="langSelect" class="form-label fw-bold">🔊 Choose Language:</label>
+        <div class="d-flex align-items-center gap-2">
+          <select id="langSelect" class="form-select w-auto">
+            <option value="en-US">English</option>
+            <option value="hi-IN">Hindi</option>
+            <option value="kn-IN">Kannada</option>
+          </select>
+          <button class="btn btn-primary" onclick="speakSteps()">Listen to Steps</button>
+        </div>
+      </div>
+
+      <!-- TTS Script -->
+      {{ media.steps|json_script:"stepsData" }}
+      <script>
+        let voices = [];
+
+        function loadVoices() {
+          voices = window.speechSynthesis.getVoices();
+        }
+
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+        loadVoices();
+
+        function speakSteps() {
+          const steps = JSON.parse(document.getElementById("stepsData").textContent);
+          if (!steps || steps.length === 0) {
+            alert("No steps available to read.");
+            return;
+          }
+
+          const lang = document.getElementById("langSelect").value;
+
+          // Pick a voice matching the selected language
+          let voice = voices.find(v => v.lang === lang);
+          if (!voice) {
+            console.warn(`No voice available for ${lang}, defaulting to English.`);
+            voice = voices.find(v => v.lang.startsWith("en")) || null;
+          }
+
+          const utterance = new SpeechSynthesisUtterance(steps.join(". "));
+          if (voice) utterance.voice = voice;
+          utterance.lang = lang;
+          utterance.rate = 1;
+          utterance.pitch = 1;
+          utterance.volume = 1;
+
+          window.speechSynthesis.speak(utterance);
+        }
+      </script>
+    {% else %}
+      <p class="text-danger">⚠️ No steps defined for this problem.</p>
+    {% endif %}
+
+    <!-- Optional Video -->
+    {% if media.video %}
+      <div class="my-4">
+        <h5 class="text-info">🎬 Related Video:</h5>
+        <video controls width="100%" style="border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+          <source src="{% static media.video %}" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+      </div>
+    {% endif %}
+
+    <!-- Optional Audio -->
+    {% if media.voice %}
+      <div class="my-3">
+        <h5 class="text-warning">🔊 Related Audio:</h5>
+        <audio controls style="width: 100%;">
+          <source src="{% static media.voice %}" type="audio/mp3">
+          Your browser does not support audio playback.
+        </audio>
+      </div>
+    {% endif %}
+
+  {% else %}
+    <p class="text-danger">⚠️ No solution media available for this issue yet.</p>
+  {% endif %}
+</div>
+
+<style>
+  .form-select, select {
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+    padding: 0.5rem 1rem;
+  }
+  button {
+    min-width: 150px;
+  }
+  ol li {
+    margin-bottom: 10px;
+  }
+</style>
+
+{% endblock %}
